@@ -165,6 +165,11 @@ let prodf = fold ( *. ) 0. ;;
 let pow a b = 
   let rec f b t = match b with 0 -> t | b -> f (b - 1) (a * t) in f b 1
 
+let cross a b =
+  let kons ael knil = fold (fun bel kn -> (ael, bel) :: kn) knil (rev b) in
+  fold kons [] (rev a) ;;
+  
+
 (** {7 Zip and unzip} *)
 
 let zip la lb = let f a b = (a, b) in map2 f la lb ;;
