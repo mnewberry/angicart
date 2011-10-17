@@ -21,9 +21,9 @@ let set_filename = set_check filename ;;
 let usage = "Usage: graphdisplay [-f] filename\n"
 let argspec = [
   ("-f", Arg.String set_filename, "File to display");
-  ("-p", Arg.Set points_only, "With -g, display points only (no edges)");
   ("-g", Arg.Set file_is_pg, 
          "Take a pointgraph file as input rather than a graphdisplay file") ;
+  ("-p", Arg.Set points_only, "With -g, display points only (no edges)");
   ("-i", Arg.Set file_is_img3, 
          "Take a 3d image as input rather than a graphdisplay file")] ;;
 
