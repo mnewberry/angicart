@@ -1,0 +1,62 @@
+INSTALLATION INSTRUCTIONS
+
+angicart depends on ocaml and several other open-source unix utilities.  These
+instructions are written with Linux and Mac OS in mind, but an intrepid person
+may be able to adapt them to windows.  Lines beginning with $ are meant to be
+typed at the command-line (Terminal) without the $.  Lines beginning with # are
+meant to be typed at a root shell.  If you need help, please contact Mitchell,
+the author.
+
+1. Obtain and install git.
+
+Use whatever method works for you.  General instructions can be found at
+  http://git-scm.com/download
+
+If you have Debian stable: 
+  # apt-get install git
+If you have macports: 
+  $ sudo port install git-core
+
+2. Obtain and install ocaml and ocaml packages.
+
+We recommend using the GODI distribution of ocaml, since it comes with an easy
+way to install the ocaml libraries that angicart depends on.  We do not
+recommend macports for installing ocaml libraries, although Debian may be fine.
+GODI requires wget, which can be obtained from your package management system:
+
+macports: $ sudo port install wget
+homebrew: $ sudo brew install wget
+debian: # apt-get install wget
+
+To install godi, follow the instructions on the GODI installation page,
+  http://godi.camlcity.org/godi/get_godi.html
+
+Once you can run godi_console, follow its onscreen instructions to install the
+ocaml libraries that angicart depends on.  More detailed instructions for this
+step are below.  The required packages are: 
+  godi-batteries, godi-camlimages, and godi-lablgl.
+It's important to configure godi-camlimages so that the
+'GODI_CAMLIMAGES_WITH_LAB$' options and the 'GODI_CAMLIMAGES_WITH_GIF' option
+are set to 'no' to avoid unnecessary dependencies such as gtk.
+
+Detailed instructions: start godi_console, then enter '2' to select source
+packages.  Then you can use arrow keys to scroll to the package.  If you enter
+the package number, you'll be taken to a screen where you can type 'b' to mark
+for build and installation and 'c' to configure it.  Configuration is only
+required for godi-camlimages; It's fine to leave everything else as it is.
+When all the packages are selected and configured, hit 's' to perform the
+build.  Hopefully it works!
+
+3. Obtain angicart and run it
+
+Get angicart; this will create a directory called angicart in the current
+directory.
+  $ git clone git@github.com:mnewberry/angicart.git
+
+Enter that directory
+  $ cd angicart
+
+Run the graphdisplay program to see if everything works.
+  $ ./make.sh graphdisplay run --help
+
+If you see the help screen (and not an error), then everything is working fine.
