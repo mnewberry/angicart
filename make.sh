@@ -13,20 +13,11 @@
 
 set -e
 
-# camlimages annoyingness.  Because of it's ancient makefile structure that
-# doesn't cooperate with ocamlfind, here are the contortions one must do:
-CI_PATH="/opt/local/lib/ocaml/camlimages"
-CI_FLAGS="-cflags -I,$CI_PATH \
-          -lflags -ccopt,-ljpeg,-ccopt,-L$CI_PATH,-ccopt,-lpng,-ccopt,-lz"
-CI_LIBS="$CI_PATH/ci_core,$CI_PATH/ci_jpeg,$CI_PATH/ci_png"
-
-PACKAGES="lablgl,lablgl.glut,oUnit,batteries"
+PACKAGES="lablgl,lablgl.glut,oUnit,batteries,camlimages"
 SELF=$0
 TARGET=$1
 FLAGS="-use-ocamlfind -cflags -g \
-       -pkgs $PACKAGES \
-       -libs $CI_LIBS \
-       $CI_FLAGS"
+       -pkgs $PACKAGES"
 OCAMLBUILD=ocamlbuild
 BIN="pngs2pls pls2pg graphdisplay"
 
