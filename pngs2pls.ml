@@ -16,18 +16,20 @@ let set_check ref v =
   else raise (Arg.Bad "Only one dir argument is supported") ;;
 
 let dir = ref None and rmin = ref None and rmax = ref None ;;
-let threshold = ref None and outp = ref None ;;
+let threshold = ref None and outp = ref None and gdout = ref None ;;
 let set_dir fn = match fn with "" -> () | fn -> set_check dir fn ;;
 let set_min = set_check rmin ;;
 let set_max = set_check rmax ;;
 let set_threshold = set_check threshold ;;
 let set_outp = set_check outp ;;
+let set_gdout = set_check gdout ;;
 
 let usage = "Usage: pngs2pls -d dir -r min max -t threshold -o output" ;;
 let argspec = [
   ("-d", Arg.String set_dir, "Source directory for images named NNNNN.png");
   ("-r", Arg.Tuple [Arg.Int set_min; Arg.Int set_max], "range");
   ("-t", Arg.Float set_threshold, "Use thresholding with value N.NNN");
+  ("-g", Arg.String set_gdout, "Output a graphdisplay file of the point list");
   ("-o", Arg.String set_outp, "Output file")] ;;
 
 let argsfail _ = Arg.usage argspec usage ; exit 1 ;;
@@ -43,3 +45,12 @@ ImageSet.normalize_img mri_img ;;
 let vertices = ImageSet.threshold_points (req threshold) mri_img ;;
 
 Mu.dump_obj (Mu.default "out.pointlist" !outp) vertices ;;
+match !gdout with 
+    None -> ()
+  | Some gdoutfn -> 
+      Mu.dump_obj "out.gd"
+        ([], [], vertices, 
+         (Mu.map (fun (x, y, z) -> 
+                   let col = truncate (mri_img.{x,y,z} *. 255.) in 
+                   (255, 128, 0, col)) 
+                 vertices)) ;;
