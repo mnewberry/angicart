@@ -52,7 +52,7 @@ let display_loop (*~idle*) ~edges ~edge_colors ~vertices ~vertex_colors =
   let edge_colors_raw = color_list_to_raw4b edge_colors edges_count in
 
   let display () =
-    GlClear.color (1.0, 1.0, 1.0) ;
+    GlClear.color (0.25, 0.25, 0.25) ;
     GlClear.clear [`color] ;
 
     GlArray.enable `vertex ;
