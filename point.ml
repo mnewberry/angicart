@@ -55,6 +55,15 @@ let set_to_str set =
   (Set.fold (fun p s -> to_str p ^ "," ^ s) (Set.remove sp set) (to_str sp)) ^
   "}"
 
+let centermost set = 
+  let ((mx, my, mz), c) = Set.fold 
+    (fun (a,b,c) ((x,y,z), c) -> ((a+x, b+y, c+z), c + 1))
+    set ((0, 0, 0), 0) in
+  if c = 0 then raise Not_found else 
+  let center = (mx/c, my/c, mz/c) in
+  Mu.fmin_by (fun kons knil lyst -> Set.fold kons lyst knil) 
+    (Mu.hypot3 center) (Set.pop set)
+
 let dist (ax, ay, az) (bx, by, bz) = 
   let sq x = x * x in 
   sqrt (float (sq (ax - bx) + sq (ay - by) + sq (az - bz)))

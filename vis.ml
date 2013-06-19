@@ -15,7 +15,7 @@ let set_check ref v =
   if !ref = None then ref := Some v
   else raise (Arg.Bad "Only one argument is supported") ;;
 let filename = ref None and goutfn = ref None and voutfn = ref None 
-  and dimension = ref None ;;
+  and boutfn = ref None and dimension = ref None ;;
 let set_filename = set_check filename ;;
 let set_goutfn = set_check goutfn ;;
 let set_voutfn = set_check voutfn ;;
@@ -26,20 +26,24 @@ let argspec = [
   ("-f", Arg.String set_filename, "pointgraph, created by output_value");
   ("-g", Arg.String set_goutfn, "Output graph for visualization");
   ("-v", Arg.String set_voutfn, "tree data tab-separated value file");
+  ("-b", Arg.String (set_check boutfn), "branchpoint data file");
   ("-d", Arg.String set_dimension, "Dimension of a voxel in millimeters")
 ] ;;
 
 let argsfail _ = Arg.usage argspec usage ; exit 1 ;;
 Arg.parse argspec set_filename usage ;;
-let req z = match !z with Some x -> x | _ -> argsfail () ;;
+let req s z = match !z with Some x -> x | _ -> Printf.printf "Error: %s\n%!" s ;
+  argsfail () ;;
 
 let openoc = function Some x -> open_out x | _ -> stdout ;;
 let vout = openoc !voutfn ;;
+let bout = open_out (req "branchpoint data" boutfn) ;;
 
 let (edges, edge_colors, vertices, vertex_colors) 
-  = Mu.slurp_obj (req filename) ;;
+  = Mu.slurp_obj (req "input pointgraph" filename) ;;
 
-let dims = Scanf.sscanf (req dimension) "%fx%fx%f" (fun x y z -> (x, y, z)) ;;
+let dims = Scanf.sscanf (req "voxel dimension" dimension) 
+  "%fx%fx%f" (fun x y z -> (x, y, z)) ;;
 
 module VT = VesselTree ;;
 module PS = Point.Set ;;
@@ -65,7 +69,8 @@ let _ =
   let vass = List.hd (List.sort (Mu.compare_with_m PG.size) ccs) in pr "6%!" ;
   let (summ, edata) = VT.summarize dist skel_g vass in pr "7%!" ;
   let edges_gl = PG.edges_gl summ in pr "8\n%!" ;
-  print vout (VT.tree_dataset summ edata (req filename)) ;
+  print vout (VT.tree_dataset summ edata (req "input file" filename)) ;
+  print bout (VT.branch_point_dataset summ edata (req "input file" filename)) ;
   let rec ecolor inp outp = match inp with
       [] -> Mu.rev outp
     | (a :: b :: rest) ->

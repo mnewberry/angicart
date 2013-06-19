@@ -55,6 +55,7 @@ module type S =
     val med_elt: t -> elt
     val max_elt: t -> elt
     val choose: t -> elt
+    val pop: t -> elt * t
     val choose_rand: (float -> float) -> t -> elt
     val split: elt -> t -> t * bool * t
   end
@@ -192,6 +193,11 @@ module Make(Ord: OrderedType) =
         Empty -> invalid_arg "Set.remove_min_elt"
       | Node(Empty, v, r, _) -> r
       | Node(l, v, r, _) -> bal (remove_min_elt l) v r
+
+    let rec pop = function
+        Empty -> invalid_arg "Set.remove_min_elt"
+      | Node(Empty, v, r, _) -> (v, r)
+      | Node(l, v, r, _) -> let (pv, t) = pop l in (pv, bal t v r)
 
     (* Merge two trees l and r into one.
        All elements of l must precede the elements of r.

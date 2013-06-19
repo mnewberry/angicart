@@ -46,18 +46,25 @@ let tips cc =
   let choose_each chf grs = Point.set (List.rev_map chf grs) in
   let set_ccs x = Gr.ccs (Gr.create x) in
   let boundary_groups = set_ccs boundary_points in
-  let boundary_tips = choose_each (seq Set.med_elt Gr.points) boundary_groups in
+  let boundary_tips = choose_each (seq Point.centermost Gr.points)
+    boundary_groups in
   let tip_points = Gr.with_degs cc [1;2;3;4] in
   let tip_groups = List.filter (fun g -> Gr.size g > 1) (set_ccs tip_points) in
   let choose_tip tg =
     Mu.findf (fun k ->
-                try Some (Set.med_elt
+                try Some (Point.centermost
                            (Set.inter (Gr.with_deg cc k) (Gr.points tg)))
                 with Not_found -> None)
              (Mu.range 1 26)
   in
   let tip_tips = choose_each choose_tip tip_groups in
   Set.union boundary_tips tip_tips
+
+let tips_alt cc =
+  let (spt, ls) = Gr.shortest_path_tree (Gr.choose cc) Point.dist cc in
+  let is_local_max pt =
+    Set.for_all (fun n -> Map.find n ls < Map.find pt ls) (Gr.neighbors pt cc)
+  in Set.filter is_local_max (Gr.with_degs cc [1;2;3;4;5;6;7;8])
 
 (* This is incredibly slow *)
 let rec skeletonize_naive pg tips =
@@ -230,6 +237,7 @@ type data = {
 
 let data e edata = EMap.find e edata
 let rad_e e edata = let ed = data e edata in rad ed.len ed.vol 
+let len_e e edata = let ed = data e edata in ed.len
 let rad_d ed = rad ed.len ed.vol
 let devf e edata = let ed = data e edata in float ed.defc /. float ed.voxc
 let point_lengths e edata = (data e edata).ls
@@ -243,11 +251,11 @@ let summarize dist skel cc =
     dist zero xhat *. dist zero yhat *. dist zero zhat in
   let nodes = Set.diff (Gr.points skel) (Gr.with_deg skel 2) in
   let start = Set.choose nodes in
-  let weight a b =
-    if Set.mem b (Gr.points skel) && Set.mem a (Gr.neighbors b skel) 
-    then 0. else dist a b
-  in
-  let (spt, ls) = Gr.shortest_path_tree start weight cc in
+  let (spt, ls) = 
+    let weight a b =
+      if Set.mem b (Gr.points skel) && Set.mem a (Gr.neighbors b skel) 
+      then 0. else dist a b
+    in Gr.shortest_path_tree start weight cc in
   let rec traverse (src, node) rest =
     let rec path (len, (src, dst)) =
       let len = len +. dist src dst in
@@ -282,15 +290,60 @@ let summarize dist skel cc =
   let start = Set.choose nodes in
   traverse (start, start) (Gr.empty, EMap.empty)
 
+(** Solve 1 = sum_i c_i^q for q using newton's method *)
+let newton_exp_solve xs init = let map = List.map in
+  let next_k xs k =
+    k -. (Mu.sumf (map (fun x -> x ** k) xs) -. 1.0) /.
+         (Mu.sumf (map (fun x -> x ** k *. log x) xs))
+  in Mu.rec_n 5 (next_k xs) init
+
+(* debugging *)
+let sum xs init = Mu.sumf (map (fun x -> x ** init) xs)
+let test list = let e = (newton_exp_solve list 1.0) in (sum list e, e)
+
+let branch_point_dataset sg edata tag =
+  let bps =
+    Set.diff (Set.diff (Gr.points sg) (Gr.with_deg sg 2)) (Gr.with_deg sg 1) in
+  let keys = EMap.keys edata in 
+  let edges bp = List.filter (fun (x,y) -> x = bp || y = bp) keys in
+  let circular edge = let ed = data edge edata in
+    ed.defc < truncate (0.2 *. (float ed.voxc)) && ed.voxc > 3 in
+  let describe_bp bp =
+    let es = edges bp in
+    if List.filter (fun e -> not (circular e)) es = [] then ([],[],[],[]) else
+    let ignwarn = List.sort (Mu.compare_with_m (fun e -> rad_e e edata)) es in
+    let (par, cs) = (List.hd ignwarn, List.tl ignwarn) in
+    let betas = List.map (fun e -> rad_e e edata /. rad_e par edata) cs in 
+    let gammas = List.map (fun e -> len_e e edata /. len_e par edata) cs in 
+    (betas, gammas, 
+    [newton_exp_solve betas 2.5], [newton_exp_solve gammas 2.5]) in
+  Set.fold 
+    (fun bp str ->
+       let fl = Printf.sprintf "%f" in
+       let rec print_lines str (bs, gs, qs, ss) = match (bs, gs) with
+           ([], []) -> str 
+         | ((bhd :: btl), (ghd :: gtl)) -> 
+             let pr q s = str ^ 
+               (Printf.sprintf "%s\t%s\t%s\t%s\n" (fl bhd) (fl ghd) q s) in
+             (match (qs, ss) with 
+                 ([], []) -> 
+                   print_lines (pr "NA" "NA") (btl, gtl, [], [])
+               | ((qhd :: qtl), (shd :: stl)) ->
+                   print_lines (pr (fl ghd) (fl shd)) (btl, gtl, qtl, stl)
+               | _ -> failwith "can't happen")
+         | _ -> failwith "can't happen" in
+       print_lines str (describe_bp bp))
+    bps "beta\tgamma\tq\ts\n"
+
 let tree_dataset sg edata tag =
-  let cat = String.concat "" and map = List.map 
+  let cat = String.concat "" and map = List.map
     and canon = Gr.canonicalize_edge in
   let downst e = Gr.downstream_e e sg  in
   let show_e e = let (src, dst) = canon e in
     Printf.sprintf "%s-%s" (Point.to_str src) (Point.to_str dst)
   in
   let show_col (r, g, b) = Printf.sprintf "#%02x%02x%02x" r g b in
-  let show_edata e ed = 
+  let show_edata e ed =
     Printf.sprintf "%s\t%f\t%f\t%f\t%d\t%d\t%s" (show_e e) ed.len ed.vol 
       (rad ed.len ed.vol) ed.voxc ed.defc (show_col ed.color)
   in
@@ -301,18 +354,12 @@ let tree_dataset sg edata tag =
     let children = map (fun e -> (e, data (canon e) edata)) (downst e) in
     let betas = map (fun (c, cd) -> rad_d cd /. rad_d ed) children in
     let gammas = map (fun (c, cd) -> cd.len /. ed.len) children in
-    let next_k xs k = 
-      k -. (Mu.sumf (map (fun x -> x ** k) xs) -. 1.0) /.
-           (Mu.sumf (map (fun x -> x ** k *. log x) xs))
-    in
     let (a, b) = 
       if children = [] then ("NA", "NA") else
       let str xs = 
         if List.for_all (fun x -> x < 1.0) xs 
-        then Printf.sprintf "%f" (Mu.rec_n 5 (next_k xs) 2.5)
-        else "NA"
+        then Printf.sprintf "%f" (newton_exp_solve xs 2.5) else "NA"
       in (str gammas, str betas) in
-    (* name len vol radius vox_c deformed_c color parent beta gamma a b *)
     Printf.sprintf "%s\t%s\t%d\t%s\t%f\t%f\t%d\t%s\t%s\n" tag (show_edata e ed) 
       (count_tips e) (show_e p) (rad_d ed /. rad_d pd) (ed.len /. pd.len) 
       (List.length children) a b

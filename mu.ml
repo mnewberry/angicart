@@ -92,6 +92,7 @@ let min_max = function
 let min_by f = function 
   (hx :: tx) -> snd (fold (min_kons_by f) (f hx, hx) tx) 
   | _ -> invalid_arg "min_max is not defined on empty lists" ;;
+let fmin_by fold f (hx, tx) = snd (fold (min_kons_by f) (f hx, hx) tx)
 let max_by f = function 
   (hx :: tx) -> snd (fold (max_kons_by f) (f hx, hx) tx)
   | _ -> invalid_arg "min_max is not defined on empty lists" ;;
@@ -108,6 +109,7 @@ let map2 f la lb = let kons a b kdr = (f a b) :: kdr in
   fold2 kons [] (rev la) (rev lb) ;;
 let map3 f la lb lc = let kons a b c kdr = (f a b c) :: kdr in 
   fold3 kons [] (rev la) (rev lb) (rev lc) ;;
+let iter f l = let kons kar () = f kar in fold kons () l ;;
 let app m n = fold cons n (rev m) ;;
 let catmap f l = let kons kar kdr = app (f kar) kdr in fold kons [] (rev l) ;;
 let filtmap f l = 

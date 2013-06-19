@@ -33,16 +33,16 @@ let req z = match !z with Some x -> x | _ -> argsfail () ;;
 
 module PG = PointGraph ;;
 
-Printf.printf ">\n%!" ;;
 let (edges, edge_colors, vertices, vertex_colors) = 
   if !file_is_pg then 
     let (pg : PG.t) = Mu.slurp_obj (req filename) in
     let edges = if !points_only then [] else PG.edges_gl pg in
     let vertices = PG.points_gl pg in
     (edges, Mu.map (Mu.constant (255,128,0,128)) edges,
-     vertices, Mu.map (Mu.constant (0,0,0,64)) vertices) 
+     vertices, Mu.map (Mu.constant (0,0,0,255)) vertices) 
   else if !file_is_img3 then
     let (ba : ImageSet.ba3) = Mu.slurp_obj (req filename) in
+    ImageSet.normalize_img ba ;
     (* let vertices = 
       let (w, h, d) = ImageSet.dims ba in
       Mu.map (fun ((a, b), c) -> (a, b, c))
@@ -55,15 +55,13 @@ let (edges, edge_colors, vertices, vertex_colors) =
     let intens (i, j, k) = truncate (ba.{i,j,k} *. 255.) in
     let (w, h, d) = ImageSet.dims ba in
     for i = 0 to w - 1 do for j = 0 to h - 1 do for k = 0 to d - 1 do
-      if intens (i, j, k) > 40 then (
+      if intens (i, j, k) > 145 then (
         vertices := (i, j, k) :: !vertices ;
         vertex_colors := (intens (i,j,k), 0, 0, intens (i, j, k)) :: !vertex_colors)
     done done done ;
     ([], [], !vertices, !vertex_colors)
   else 
     Mu.slurp_obj (req filename)  ;;
-
-Printf.printf "color'd%!" ;;
 
 GraphGL.display_loop
   ~edges:edges
