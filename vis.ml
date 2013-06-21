@@ -15,10 +15,11 @@ let set_check ref v =
   if !ref = None then ref := Some v
   else raise (Arg.Bad "Only one argument is supported") ;;
 let filename = ref None and goutfn = ref None and voutfn = ref None 
-  and boutfn = ref None and dimension = ref None ;;
+  and boutfn = ref None and tag = ref None and dimension = ref None ;;
 let set_filename = set_check filename ;;
 let set_goutfn = set_check goutfn ;;
 let set_voutfn = set_check voutfn ;;
+let set_tag = set_check tag ;;
 let set_dimension = set_check dimension ;;
 
 let usage = "Usage: vis -g out.gp -v out.tsv -d 0.7x0.7x0.8 [-f] skel.gd\n"
@@ -26,14 +27,16 @@ let argspec = [
   ("-f", Arg.String set_filename, "pointgraph, created by output_value");
   ("-g", Arg.String set_goutfn, "Output graph for visualization");
   ("-v", Arg.String set_voutfn, "tree data tab-separated value file");
+  ("-l", Arg.String set_tag, "the tag, or first data column");
   ("-b", Arg.String (set_check boutfn), "branchpoint data file");
   ("-d", Arg.String set_dimension, "Dimension of a voxel in millimeters")
 ] ;;
 
 let argsfail _ = Arg.usage argspec usage ; exit 1 ;;
 Arg.parse argspec set_filename usage ;;
-let req s z = match !z with Some x -> x | _ -> Printf.printf "Error: %s\n%!" s ;
-  argsfail () ;;
+let req s z = match !z with Some x -> x 
+  | _ -> Printf.printf "Error: %s\n%!" s ; argsfail () ;;
+let def d z = match !z with Some x -> x | _ -> d ;;
 
 let openoc = function Some x -> open_out x | _ -> stdout ;;
 let vout = openoc !voutfn ;;
@@ -69,8 +72,10 @@ let _ =
   let vass = List.hd (List.sort (Mu.compare_with_m PG.size) ccs) in pr "6%!" ;
   let (summ, edata) = VT.summarize dist skel_g vass in pr "7%!" ;
   let edges_gl = PG.edges_gl summ in pr "8\n%!" ;
-  print vout (VT.tree_dataset summ edata (req "input file" filename)) ;
-  print bout (VT.branch_point_dataset summ edata (req "input file" filename)) ;
+  print vout (VT.tree_dataset summ edata 
+               (def (req "input file" filename) tag));
+  print bout (VT.branch_point_dataset summ edata 
+               (def (req "input file" filename) tag)) ;
   let rec ecolor inp outp = match inp with
       [] -> Mu.rev outp
     | (a :: b :: rest) ->
