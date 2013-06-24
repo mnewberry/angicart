@@ -295,11 +295,11 @@ let newton_exp_solve xs init = let map = List.map in
   let next_k xs k =
     k -. (Mu.sumf (map (fun x -> x ** k) xs) -. 1.0) /.
          (Mu.sumf (map (fun x -> x ** k *. log x) xs))
-  in Mu.rec_n 5 (next_k xs) init
+  in Mu.rec_n 100 (next_k xs) init
 
 (* debugging *)
-let sum xs init = Mu.sumf (map (fun x -> x ** init) xs)
-let test list = let e = (newton_exp_solve list 1.0) in (sum list e, e)
+let sumpow xs init = Mu.sumf (Mu.map (fun x -> x ** init) xs)
+let newton_test lst = let e = newton_exp_solve lst 1.0 in (sumpow lst e, e)
 
 let branch_point_dataset sg edata tag =
   let bps =
@@ -350,29 +350,33 @@ let tree_dataset sg edata tag =
   let rec count_tips e = let cs = downst e in
     if cs = [] then 1 else Mu.sum (map count_tips cs)
   in
-  let rec describe_e p pd e ed =
-    let children = map (fun e -> (e, data (canon e) edata)) (downst e) in
+  let children e ed = map (fun e -> (e, data (canon e) edata)) (downst e) in
+  let show_cdata e ed =
+    let children = children e ed in
     let betas = map (fun (c, cd) -> rad_d cd /. rad_d ed) children in
     let gammas = map (fun (c, cd) -> cd.len /. ed.len) children in
     let (a, b) = 
       if children = [] then ("NA", "NA") else
       let str xs = 
         if List.for_all (fun x -> x < 1.0) xs 
-        then Printf.sprintf "%f" (newton_exp_solve xs 2.5) else "NA"
-      in (str gammas, str betas) in
-    Printf.sprintf "%s\t%s\t%d\t%s\t%f\t%f\t%d\t%s\t%s\n" tag (show_edata e ed) 
+        then string_of_float (newton_exp_solve xs 1.0) else "NA"
+      in (str betas, str gammas) in
+    Printf.sprintf "%d\t%s\t%s"
+      (List.length children) a b (* (Mu.join "," (Mu.map (fun (a, b) -> show_e a) children)) *)
+  in
+  let rec describe_e p pd e ed =
+    Printf.sprintf "%s\t%s\t%d\t%s\t%f\t%f\t%s\n" tag (show_edata e ed) 
       (count_tips e) (show_e p) (rad_d ed /. rad_d pd) (ed.len /. pd.len) 
-      (List.length children) a b
-    ^ cat (map (fun (c, cd) -> describe_e e ed c cd) children)
+      (show_cdata e ed) (* (Mu.join "," (Mu.map (fun (a, b) -> show_e a) children)) *)
+    ^ cat (map (fun (c, cd) -> describe_e e ed c cd) (children e ed))
   in
 
   let (src, dst) as e =
     Mu.max_by (fun e -> rad_e e edata) (Gr.ESet.elements (Gr.edges sg)) in
   let ed = data e edata in
   let des c = describe_e e ed c (data (canon c) edata) in
-  Printf.sprintf 
-  "tag\tname\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\ta\tb\n"
-  ^ Printf.sprintf "%s\t%s\t%d\tNA\tNA\tNA\tNA\tNA\tNA\n" tag (show_edata e ed)
-      (Mu.max_kons (count_tips e) (count_tips (dst, src)))
-  ^ cat (map des (downst e))
-  ^ cat (map des (downst (dst, src)))
+  let edir = if count_tips e < count_tips (dst,src) then (dst, src) else e in
+  "tag\tname\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\tq\ts\n"
+  ^ Printf.sprintf "%s\t%s\t%d\tNA\tNA\tNA\t%s\n" tag (show_edata e ed)
+      (count_tips edir) (show_cdata edir ed)
+  ^ cat (map des (downst edir))
