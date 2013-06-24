@@ -193,6 +193,16 @@ let take n l =
 let repeat n x = 
   let rec r n a x = if n > 0 then r (n - 1) (x :: a) x else a in r n [] x ;;
 
+(** {7 words from perl} *)
+
+let split = Pcre.split ~pat:""
+let splitws = Pcre.split
+let splitnl = Pcre.split ~pat:"\\n"
+let splittab = Pcre.split ~pat:"\\t"
+let join = String.concat
+let joinsp = String.concat " "
+let joinnl = String.concat "\n"
+
 (** {7 creative ideas} *)
 
 (** A better syntax for compare: [compare (f a) (f b)] *)
@@ -217,10 +227,10 @@ let dump_obj filename obj = let ch = open_out filename in
   output_value ch obj ; close_out ch ;;
 
 let slurp filename = let chan = open_in filename in
-  let rec slurp_ str = 
-    try slurp_ (str ^ String.make 1 (input_char chan)) 
-    with End_of_file -> str in
-  slurp_ "" ;;
+  let rec slurp_ str =
+    match (try Some (input_line chan) with End_of_file -> None) with
+      Some line -> slurp_ (str ^ line ^ "\n") | None -> str in
+  let cont = slurp_ "" in close_in chan ; cont
 let slurp_obj filename = let chan = open_in filename in
   input_value chan ;;
 
