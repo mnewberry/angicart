@@ -40,7 +40,6 @@ let def d z = match !z with Some x -> x | _ -> d ;;
 
 let openoc = function Some x -> open_out x | _ -> stdout ;;
 let vout = openoc !voutfn ;;
-let bout = open_out (req "branchpoint data" boutfn) ;;
 
 let (edges, edge_colors, vertices, vertex_colors) 
   = Mu.slurp_obj (req "input pointgraph" filename) ;;
@@ -74,8 +73,10 @@ let _ =
   let edges_gl = PG.edges_gl summ in pr "8\n%!" ;
   print vout (VT.tree_dataset summ edata 
                (def (req "input file" filename) tag));
-  print bout (VT.branch_point_dataset summ edata 
-               (def (req "input file" filename) tag)) ;
+  (match boutfn with None -> () | Some fn ->
+    let bout = open_out fn in 
+    print bout (VT.branch_point_dataset summ edata 
+               (def (req "input file" filename) tag)));
   let rec ecolor inp outp = match inp with
       [] -> Mu.rev outp
     | (a :: b :: rest) ->
