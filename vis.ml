@@ -73,7 +73,7 @@ let _ =
   let edges_gl = PG.edges_gl summ in pr "8\n%!" ;
   print vout (VT.tree_dataset summ edata 
                (def (req "input file" filename) tag));
-  (match boutfn with None -> () | Some fn ->
+  (match !boutfn with None -> () | Some fn ->
     let bout = open_out fn in 
     print bout (VT.branch_point_dataset summ edata 
                (def (req "input file" filename) tag)));
