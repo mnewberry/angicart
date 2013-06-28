@@ -18,6 +18,7 @@ module EMap = Gr.EMap
 module Map = Gr.Map
 
 let pr = Printf.printf 
+let absf = abs_float
 
 let pi = acos (-1.0) 
 let sq x = x * x 
@@ -64,7 +65,7 @@ let tips_alt cc =
   let (spt, ls) = Gr.shortest_path_tree (Gr.choose cc) Point.dist cc in
   let is_local_max pt =
     Set.for_all (fun n -> Map.find n ls < Map.find pt ls) (Gr.neighbors pt cc)
-  in Set.filter is_local_max (Gr.with_degs cc [1;2;3;4;5;6;7;8])
+  in Set.filter is_local_max (Gr.with_degs cc [1;2;3;4;5;6;7;8;9;10;11;12;13])
 
 (* This is incredibly slow *)
 let rec skeletonize_naive pg tips =
@@ -281,7 +282,7 @@ let summarize dist skel cc =
         { len = len; vol = vol *. (float (tot - defc) /. float tot) ; 
           voxc = tot ; defc = defc ;
           ls = Map.with_keys (Set.elements points) ls ;
-          color = (Random.int 255, Random.int 255, Random.int 255) }
+          color = Mu.hsl2rgb (Random.float 360., 1., 0.5) }
         edata in
       traverse (dtab, dnode) (gr, edata)
     in
@@ -298,7 +299,7 @@ let newton_exp_solve xs init = let map = List.map in
   in Mu.rec_n 100 (next_k xs) init
 
 (* debugging *)
-let sumpow xs init = Mu.sumf (Mu.map (fun x -> x ** init) xs)
+let sumpow xs q = Mu.sumf (Mu.map (fun x -> x ** q) xs)
 let newton_test lst = let e = newton_exp_solve lst 1.0 in (sumpow lst e, e)
 
 let branch_point_dataset sg edata tag =
@@ -316,7 +317,7 @@ let branch_point_dataset sg edata tag =
     let betas = List.map (fun e -> rad_e e edata /. rad_e par edata) cs in 
     let gammas = List.map (fun e -> len_e e edata /. len_e par edata) cs in 
     (betas, gammas, 
-    [newton_exp_solve betas 2.5], [newton_exp_solve gammas 2.5]) in
+    [newton_exp_solve betas 1.0], [newton_exp_solve gammas 1.0]) in
   Set.fold 
     (fun bp str ->
        let fl = Printf.sprintf "%f" in
@@ -358,8 +359,11 @@ let tree_dataset sg edata tag =
     let (a, b) = 
       if children = [] then ("NA", "NA") else
       let str xs = 
-        if List.for_all (fun x -> x < 1.0) xs 
+        if List.for_all (fun x -> x < 0.9999) xs
         then string_of_float (newton_exp_solve xs 1.0) else "NA"
+(*      let exp = newton_exp_solve xs 1.0 in
+        if (List.for_all ((<>) 1.0) xs) & (absf (sumpow xs exp -. 1.0) < 0.001)
+        then string_of_float exp else "NA" *)
       in (str betas, str gammas) in
     Printf.sprintf "%d\t%s\t%s"
       (List.length children) a b (* (Mu.join "," (Mu.map (fun (a, b) -> show_e a) children)) *)
