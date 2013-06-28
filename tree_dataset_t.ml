@@ -50,19 +50,19 @@ let test_tree_dataset =
         assert_equali 1 (size (find_all 1 name))) ] @
     if (nth rowdata 13) = "NA" then [] else [
       "qs_newton_exp" >:: (fun _ -> 
-        assert_equalf 0.0001 1.0 qsum ) ; 
+        assert_equalf 0.00001 1.0 qsum ) ; 
       "qs" >:: (fun _ -> 
         assert_equalf 0.0001 qexp (float_of_string (nth rowdata 13)))] @
     if nth rowdata 14 = "NA" then [] else [
       "ss_newton_exp" >:: (fun _ -> 
-        assert_equalf 0.0001 1.0 ssum) ; 
+        assert_equalf 0.00001 1.0 ssum) ; 
       "ss" >:: (fun _ -> 
         assert_equalf 0.0001 sexp (float_of_string (nth rowdata 14)))]
   in List.map (fun (name, rowdata) -> name >::: test (name, rowdata)) assocl
 
 let test_newton lst _ = 
   let e = VT.newton_exp_solve lst 1.0 in 
-  assert_equalf 0.0001 1.0 (sumpow lst e)
+  assert_equalf 0.00001 1.0 (sumpow lst e)
 
 let _ = run_test_tt_main ("tree_dataset" >::: [
   "newton_exp1" >:: test_newton [0.8; 0.8] ;
