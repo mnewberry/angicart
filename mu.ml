@@ -246,3 +246,16 @@ module Ext = struct
     let start = Unix.gettimeofday () in thunk () ;
     Unix.gettimeofday () -. start
 end
+
+(* inspired by the haskell implementation as usual *)
+let hsl2rgb (h, s, l) = 
+  let mod1 f = mod_float f 1.0 in
+  let hk = h /. 360. and third = 1. /. 3. in
+  let tr = mod1 (hk +. third) and tg = mod1 hk and tb = mod1 (hk -. third) in
+  let q = if l < 0.5 then l *. (1. +. s) else l +. s -. l *. s in
+  let p = 2. *. l -. q in
+  let c t = truncate (255. *.
+    if t < 1. /. 6. then p +. ((q -. p) *. 6. *. t) else
+    if t < 1. /. 2. then q else
+    if t < 2. /. 3. then p +. ((q -. p) *. 6. *. (2. /. 3. -. t)) else p)
+  in (c tr, c tg, c tb)

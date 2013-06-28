@@ -94,12 +94,12 @@ let _ =
       let pls = VT.point_lengths edge edata in
       let points = Map.keys pls in
       (*let rad_e = VT.rad_e edge edata in*)
-      (*let (r,g,b) = VT.color edge edata in*)
+      let (r,g,b) = VT.color edge edata in
       (*let f c = if VT.devf edge edata > 0.20 then c / 2 else c / 2 + 128 in*)
       Mu.fold 
         (fun p rest ->
-          (p, (128, 128, 128,
-                 if VT.devf edge edata > 0.20 then 8 else 64)) 
+          (p, (r,g,b,
+                 if VT.devf edge edata > 0.20 then 16 else 128)) 
           :: rest)
         colorlist points 
     in
