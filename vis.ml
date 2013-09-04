@@ -15,12 +15,14 @@ let set_check ref v =
   if !ref = None then ref := Some v
   else raise (Arg.Bad "Only one argument is supported") ;;
 let filename = ref None and goutfn = ref None and voutfn = ref None 
-  and boutfn = ref None and tag = ref None and dimension = ref None ;;
+  and boutfn = ref None and tag = ref None and dimension = ref None
+  and symmetric = ref false and asymmetric = ref None ;;
 let set_filename = set_check filename ;;
 let set_goutfn = set_check goutfn ;;
 let set_voutfn = set_check voutfn ;;
 let set_tag = set_check tag ;;
 let set_dimension = set_check dimension ;;
+let set_asymmetric = set_check asymmetric ;;
 
 let usage = "Usage: vis -g out.gp -v out.tsv -d 0.7x0.7x0.8 [-f] skel.gd\n"
 let argspec = [
@@ -29,6 +31,8 @@ let argspec = [
   ("-v", Arg.String set_voutfn, "tree data tab-separated value file");
   ("-l", Arg.String set_tag, "the tag, or first data column");
   ("-b", Arg.String (set_check boutfn), "branchpoint data file");
+  ("-S", Arg.Set symmetric, "Output fake symmetric data");
+  ("-A", Arg.Float set_asymmetric, "Output fake symmetric data");
   ("-d", Arg.String set_dimension, "Dimension of a voxel in millimeters")
 ] ;;
 
@@ -41,13 +45,20 @@ let def d z = match !z with Some x -> x | _ -> d ;;
 let openoc = function Some x -> open_out x | _ -> stdout ;;
 let vout = openoc !voutfn ;;
 
+module VT = VesselTree ;;
+
+let print = output_string ;;
+
+if !symmetric then (print vout (VT.symmetric_tree_dataset ()) ; exit 0) ;;
+if !asymmetric <> None then (print vout 
+  (VT.asymmetric_tree_dataset (req "can't happen" asymmetric)) ; exit 0) ;;
+
 let (edges, edge_colors, vertices, vertex_colors) 
   = Mu.slurp_obj (req "input pointgraph" filename) ;;
 
 let dims = Scanf.sscanf (req "voxel dimension" dimension) 
   "%fx%fx%f" (fun x y z -> (x, y, z)) ;;
 
-module VT = VesselTree ;;
 module PS = Point.Set ;;
 module PG = PointGraph ;;
 module ESet = PG.ESet ;;
@@ -55,7 +66,6 @@ module Map = PG.Map ;;
 
 let pr = Printf.printf ;;
 let str = Printf.sprintf ;;
-let print = output_string ;;
 
 let _ =
   let dist (ax, ay, az) (bx, by, bz) =

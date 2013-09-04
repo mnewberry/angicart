@@ -1,1 +1,9 @@
 _build/
+pls2pg
+pls2pg.native
+pngs2pls
+pngs2pls.native
+skeletonize
+skeletonize.native
+vis
+vis.native

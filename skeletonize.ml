@@ -35,7 +35,7 @@ module VT = VesselTree ;;
 let dot () = Printf.printf ".%!" ;;
 
 let (lcc : PG.t) = Mu.slurp_obj (req filename) ;; dot () ;;
-let tips = VT.tips lcc ;; dot () ;;
+let tips = VT.pruned_tips_alt Point.dist 7. lcc ;; dot () ;;
 let skel_g = VT.skeletonize_dt lcc tips ;; dot ();;
 let branch_points = PG.with_degs skel_g (Mu.range 3 26) ;; dot () ;;
 

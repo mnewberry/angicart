@@ -359,6 +359,21 @@ let shortest_path_tree origin weight cc =
   _dijkstra_iter 
     cc weight (add origin empty) ls (_dijkstra_paths cc weight origin ls)
 
+(** find all members of points within dist of origin by metric w in cc *)
+let find_within origin w cc dist points =
+  let rec _dijkstra_iterf spt ls found front =
+    if front = Heap.empty then found else
+    let (len, (src, dst)), rest = Heap.find_min front, Heap.del_min front in
+    if len > dist then found else (* <- why _dijkstra_iter doesn't suffice *)
+    if Set.mem dst spt.ps then _dijkstra_iterf spt ls found rest else
+    let ls_with_dst = Map.add dst len ls in
+    _dijkstra_iterf (add_edge (src, dst) spt) ls_with_dst
+      (if Set.mem dst points then Map.add dst len found else found)
+      (Heap.merge (_dijkstra_paths cc w dst ls_with_dst) rest) in
+  let ls = Map.add origin 0. Map.empty in
+  _dijkstra_iterf (add origin empty) ls Map.empty 
+    (_dijkstra_paths cc w origin ls)
+
 (* this is roughly identical to the above,
    just a different initialiation and return value. *)
 let distance_transform weight cc =

@@ -67,6 +67,24 @@ let tips_alt cc =
     Set.for_all (fun n -> Map.find n ls < Map.find pt ls) (Gr.neighbors pt cc)
   in Set.filter is_local_max (Gr.with_degs cc [1;2;3;4;5;6;7;8;9;10;11;12;13])
 
+(* Remove duplicate tips *)
+(* Two tips are the same if they are closeby, and their distance within the
+	 network is comparable to their euclidean distance (ie, they are not in
+	 separate vessels).  Since this sameness relationship is not transitive,
+	 same_tips computes the transitive closure of sameness.  same_tips-ness is a
+   legit equivalence relation. *)
+  (* let ptset lst = Mu.fold Set.add Set.empty lst in *)
+let pruned_tips_alt w radius cc =
+  let same_tips point =
+    let same_mk nh len same =
+      if len < w point nh *. 1.1 +. 2. then Set.add nh same else same in
+    Map.fold same_mk (Gr.find_within point w cc radius cc.Gr.ps) Set.empty in
+  let rec prune pruned unpruned =
+    if unpruned = Set.empty then pruned else
+    let (next, unpruned) = Set.pop unpruned in
+    prune (Set.add next pruned) (Set.diff unpruned (same_tips next))
+  in prune Set.empty (tips_alt cc)
+
 (* This is incredibly slow *)
 let rec skeletonize_naive pg tips =
   let pr = Printf.printf in pr ".%!" ;
@@ -335,6 +353,54 @@ let branch_point_dataset sg edata tag =
          | _ -> failwith "can't happen" in
        print_lines str (describe_bp bp))
     bps "beta\tgamma\tq\ts\n"
+
+let symmetric_tree_dataset () = 
+  let beta = 2. ** (-.(1./.2.)) in
+  let gamma = 2. ** (-.(1./.3.)) in
+  let rec fake_lines name rad len = 
+    let vol = pi *. rad *. rad *. len in
+    if rad < 0.6 /. beta 
+    then (1, [Printf.sprintf 
+      "SYM\t%d\t%f\t%f\t%f\t%d\t0\t#000000\t%d\t%d\t%f\t%f\t0\t2.0\t3.0"
+      name len vol rad (int_of_float vol) 1 (name/2) beta gamma ])
+    else
+    let (tls, lls) = fake_lines (name * 2) (rad *. beta) (len *. gamma) in
+    let (trs, lrs) = fake_lines (name * 2 + 1) (rad *. beta) (len *. gamma) in
+    (tls + trs, [ Printf.sprintf
+      "SYM\t%d\t%f\t%f\t%f\t%d\t0\t#000000\t%d\t%d\t%f\t%f\t2\t2.0\t3.0"
+      name len vol rad (int_of_float vol) (tls + trs) (name/2) beta gamma ]
+      @ lls @ lrs)
+  in 
+  "tag\tname\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\tq\ts\n"
+  ^ String.concat "\n" (snd (fake_lines 1 13.6 100.))
+
+let asymmetric_tree_dataset lambda =
+  let beta1 = (1. +. lambda ** 2.) ** (-1./.2.) in
+  let beta2 = beta1 *. lambda in
+  let gamma1 = (1. +. lambda ** 3.) ** (-1./.3.) in
+  let gamma2 = gamma1 *. lambda in
+  let rec fake_lines name prad plen beta gamma =
+    let vol = pi *. prad *. prad *. beta *. beta *. plen *. gamma in
+    if prad < 0.6 /. beta 
+    then (1, [Printf.sprintf
+      "SYM\t%d\t%f\t%f\t%f\t%d\t0\t#000000\t%d\t%d\t%f\t%f\t0\tNA\tNA"
+      name (plen *. gamma) vol (prad *. beta) (int_of_float vol) 
+      1 (name/2) beta gamma ])
+    else
+    let (tls, lls) = fake_lines (name * 2) (prad *. beta) (plen *. gamma) 
+                       beta1 gamma1 in
+    let (trs, lrs) = fake_lines (name * 2 + 1) (prad *. beta) (plen *. gamma) 
+                       beta2 gamma2 in
+    (tls + trs, [ Printf.sprintf
+      "SYM\t%d\t%f\t%f\t%f\t%d\t0\t#000000\t%d\t%d\t%f\t%f\t2\t%f\t%f"
+      name (plen *. gamma) vol (prad *. beta) (int_of_float vol) 
+      (tls + trs) (name/2) beta gamma 
+      (newton_exp_solve [beta1;beta2] 1.0) 
+      (newton_exp_solve [gamma1;gamma2] 1.0)]
+      @ lls @ lrs)
+  in 
+  "tag\tname\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\tq\ts\n"
+  ^ String.concat "\n" (snd (fake_lines 1 13.6 100. beta1 gamma1))
 
 let tree_dataset sg edata tag =
   let cat = String.concat "" and map = List.map
