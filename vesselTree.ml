@@ -163,20 +163,20 @@ let skeletonize_dt pg tips =
   pr ">%!" ;
   let dt = Gr.distance_transform Point.dist pg in
   pr "dt;%!" ;
-  let removal_order = Mu.map fst 
+  let removal_order = Mu.map fst
     (List.sort (Mu.compare_with snd) (Map.bindings dt)) in
   pr "ro;%!" ;
   let rec skize batch (gr, meat, skel) =
-    if Set.is_empty meat 
+    if Set.is_empty meat
     then gr
     else skize (List.tl batch) (remr (List.hd batch) (gr, meat, skel))
   in
-  let run pg = 
-    (pr "\nSTART\n%!" ; 
+  let run pg =
+    (pr "\nSTART\n%!" ;
     skize removal_order (pg, Set.diff (Gr.points pg) tips, tips)
     )
   in
-  let best = 
+  let best =
     Mu.fix_eq (fun a b -> Set.equal (Gr.points a) (Gr.points b)) run pg in
   skeletonize_less_naive removal_order best tips
   
