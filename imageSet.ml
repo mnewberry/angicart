@@ -12,10 +12,10 @@
 (* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. *)
 
 open Mu
-open Images
-open OImages
 open Printf
 
+module SI = Sdlloader
+module SV = Sdlvideo
 module BA3 = Bigarray.Array3
 
 let imageset_data_type = Bigarray.float32 
@@ -27,31 +27,23 @@ let dims img = (BA3.dim1 img, BA3.dim2 img, BA3.dim3 img)
 
 let load start finish path =
   let filename index = sprintf "%s%05d.png" path index in
-  let get_image index = 
-    let image = OImages.load (filename (index + start)) [] in
-    (match OImages.tag image with
-      | Index8 img -> let rgb = img#to_rgb24 in img#destroy ; rgb
-      | Index16 img -> let rgb = img#to_rgb24 in img#destroy ; rgb
-      | Rgb24 img -> img
-      | _ -> invalid_arg (sprintf "Cannot convert color map of %s" 
-                                  (filename index)))
-  in 
+  let get_image index = SI.load_image (filename (index + start)) in
 
   (* Load the first image to get the width and height *)
   let init_img = get_image 0 in 
-  let width = init_img#width and height = init_img#height in
+  let (width, height, _) = SV.surface_dims init_img in
   let out_arr = create (width, height, finish - start) in
-  init_img#destroy ;
 
   for img_i=0 to finish - start - 1 do
     let img = get_image img_i in
+    let get_pixel x y = let (r,_,_) = SV.get_pixel_color img x y in r in
     for x = 0 to width-1 do 
       for y = 0 to height-1 do
-        out_arr.{x,y,img_i} <- (float (img#get x y).r) /. 255.
+        out_arr.{x,y,img_i} <- (float (get_pixel x y)) /. 255.
       done
     done
   done ;
-  out_arr  
+  out_arr
 
 let foldl_img_idx kons knil img =
   let res = ref knil in
