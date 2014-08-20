@@ -19,7 +19,7 @@ TARGET=$1
 FLAGS="-use-ocamlfind -cflags -g \
        -pkgs $PACKAGES"
 OCAMLBUILD=ocamlbuild
-BIN="pngs2pls pls2pg graphdisplay"
+BIN="pngs2pls pls2pg graphdisplay vis skeletonize"
 
 ocb()
 {
@@ -28,7 +28,10 @@ ocb()
 
 rule() {
   case $1 in
-    clean)  ocb -clean;;
+    clean) 
+      ocb -clean
+      for FI in $BIN ; do if [[ -e $FI ]] ; then rm $FI ; fi ; done
+      ;;
     run)    
       shift
       export OCAMLRUNPARAM=b
@@ -59,7 +62,8 @@ rule() {
   esac;
 }
 
-if [ $TARGET == 'test' ] || [ $TARGET == 'doc' ] || [ $TARGET == 'bin' ] ; then
+if [ $TARGET == 'test' ] || [ $TARGET == 'doc' ] || [ $TARGET == 'bin' ] \
+   || [ $TARGET == 'clean' ]; then
   rule $TARGET
   echo
   exit 0
