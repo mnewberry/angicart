@@ -24,8 +24,14 @@ let argspec = [
   ("-g", Arg.Set file_is_pg, 
          "Take a pointgraph file as input rather than a graphdisplay file") ;
   ("-p", Arg.Set points_only, "With -g, display points only (no edges)");
+  (*  This option is removed temporarily due to a conflict between SDL,
+      required by ImageSet, and lablgl.glut, required by GraphGL which
+      manifests only on OS X.  On other systems, or after this conflict has
+      been resolve through more clever packaging of those dependencies,
+      uncomment the code here and below, and modify the make.sh script to link
+      graphdisplay to both libraries.
   ("-i", Arg.Set file_is_img3, 
-         "Take a 3d image as input rather than a graphdisplay file")] ;;
+         "Take a 3d image as input rather than a graphdisplay file") *)] ;;
 
 let argsfail _ = Arg.usage argspec usage ; exit 1 ;;
 Arg.parse argspec set_filename usage ;;
@@ -40,7 +46,7 @@ let (edges, edge_colors, vertices, vertex_colors) =
     let vertices = PG.points_gl pg in
     (edges, Mu.map (Mu.constant (255,128,0,128)) edges,
      vertices, Mu.map (Mu.constant (0,0,0,255)) vertices) 
-  else if !file_is_img3 then
+  else (* if !file_is_img3 then
     let (ba : ImageSet.ba3) = Mu.slurp_obj (req filename) in
     ImageSet.normalize_img ba ;
     (* let vertices = 
@@ -60,7 +66,7 @@ let (edges, edge_colors, vertices, vertex_colors) =
         vertex_colors := (intens (i,j,k), 0, 0, intens (i, j, k)) :: !vertex_colors)
     done done done ;
     ([], [], !vertices, !vertex_colors)
-  else 
+  else *)
     Mu.slurp_obj (req filename)  ;;
 
 GraphGL.display_loop

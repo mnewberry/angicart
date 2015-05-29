@@ -13,11 +13,33 @@
 
 set -e
 
-PACKAGES="lablgl,lablgl.glut,oUnit,batteries,sdl,sdl.sdlimage,pcre"
+PACKAGES="oUnit,batteries,pcre"
+GL_PACKAGES="lablgl,lablgl.glut"
+SDL_PACKAGES="sdl,sdl.sdlimage"
 SELF=$0
 TARGET=$1
-FLAGS="-use-ocamlfind -cflags -g \
-       -pkgs $PACKAGES"
+
+GL_TARGETS="graphdisplay"
+SDL_TARGETS="pngs2pls binomial_blur"
+
+LFLAGS=""
+
+if [[ $GL_TARGETS =~ $TARGET ]] ; then 
+  PACKAGES="$PACKAGES,$GL_PACKAGES"
+fi
+
+if [[ $SDL_TARGETS =~ $TARGET ]] ; then
+  PACKAGES="$PACKAGES,$SDL_PACKAGES"
+  # Extract linker arguments from sdl-config, if any.
+  SDLFLAGS=`sh -c 'for i in \`sdl-config --libs\`; do echo $i ; done ;' \
+            | grep '^-Wl' | cut -d , -f 2- \
+            | sed -e "s/\([^,][^,]*\)/-cclib,\1/g" \
+            | sed -e "s/\(^..*\)/-lflags \1/"`
+  LFLAGS="$LFLAGS $SDLFLAGS"
+fi
+
+FLAGS="-use-ocamlfind -cflags -g,-cc,bs,-ccopt,-v \
+       -pkgs $PACKAGES $SDLFLAGS"
 OCAMLBUILD=ocamlbuild
 BIN="pngs2pls pls2pg graphdisplay vis skeletonize"
 

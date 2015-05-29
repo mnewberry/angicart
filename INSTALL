@@ -1,45 +1,44 @@
-INSTALLATION INSTRUCTIONS
+INSTALLATION
 
-angicart depends on ocaml and several other open-source unix utilities.  These
-instructions are written with Linux and Mac OS in mind, but an intrepid person
-may be able to adapt them to windows.  Lines beginning with $ are meant to be
-typed at the command-line (Terminal) without the $.  Lines beginning with # are
-meant to be typed at a root shell.  If you need help, please contact the
+Angicart depends on ocaml and other open-source unix utilities,
+and is known to work on most Linux distributions and on OS X.
+Lines beginning with $ are meant to be typed at the command-line
+(Terminal) without the $.  Lines beginning with # are meant to
+be typed at a root shell.  If you need help, please contact the
 author.
 
-1. Obtain and install git.
+1. Obtain and install git.  General instructions can be found at
+http://git-scm.com/download
 
-Use whatever method works for you.  General instructions can be found at
-  http://git-scm.com/download
+2. Install system dependencies using your OS package manager. On
+OS X, homebrew is a package manager for Unix software, available
+at http://brew.sh/ .
 
-If you have Debian stable:
-  # apt-get install git
-If you have macports:
-  $ sudo port install git-core
+Once homebrew is working, angicart's system dependencies can be
+installed as:
 
-2. Obtain and install ocaml and ocaml packages.
+  $ brew install pcre sdl sdl_image
 
-GODI and OPAM are both package managers for ocaml software that contain all angicart's dependancies.
+3. Obtain and install ocaml and ocaml packages.  Angicart is
+known to work with recent versions of OPAM.  To install OPAM,
+see http://opam.ocaml.org/ .  The library dependancies of
+angicart are provided by OPAM packages. Once OPAM and the system
+dependencies are installed:
+ 
+  $ opam install batteries pcre lablgl ocamlsdl ounit
 
-To install GODI, follow the instructions on the GODI installation page,
-  http://godi.camlcity.org/godi/get_godi.html
-To install OPAM, see http://opam.ocaml.org/
+4. Obtain angicart and run it.  The following command  will
+create a directory called angicart in the current directory:
 
-The library dependancies of angicart are, in GODI:
-  godi-batteries, godi-pcre, godi-sdl, and godi-lablgl.
-and in OPAM:
-  batteries, pcre, lablgl, and ocamlsdl
-
-3. Obtain angicart and run it
-
-Get angicart; this will create a directory called angicart in the current
-directory.
-  $ git clone git@github.com:mnewberry/angicart.git
+  $ git clone https://github.com/mnewberry/angicart.git
 
 Enter that directory
+
   $ cd angicart
 
 Run the graphdisplay program to see if everything works.
+
   $ ./make.sh graphdisplay run --help
 
-If you see the help screen (and not an error), then everything is working fine.
+If you see the help screen (and not an error), then everything
+is working.
