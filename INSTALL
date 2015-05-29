@@ -42,3 +42,16 @@ Run the graphdisplay program to see if everything works.
 
 If you see the help screen (and not an error), then everything
 is working.
+
+EXAMPLE
+
+On Mac OS X 10.10.3 with homebrew installed, ocaml, opam, and angicart can be
+installedwith the following commands:
+
+  $ git clone https://github.com/mnewberry/angicart.git
+  $ brew install ocaml opam pcre sdl sdl_image
+  $ opam init
+  $ eval `opam config env`
+  $ opam install batteries pcre lablgl ocamlsdl ounit
+  $ cd angicart
+  $ ./make.sh graphdisplay run --help
