@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# Compile native binaries for all angicart programs
+./make.sh	pngs2pls native && cp pngs2pls.native pngs2pls
+./make.sh pls2pg native && cp pls2pg.native pls2pg
+./make.sh skeletonize native && cp skeletonize.native skeletonize
+./make.sh vis native && cp vis.native vis
+
+# System-specific Configuration
+OUTDIR=example/out
+
+# Basic processing workflow
+function run {
+  # Parameters:
+  #   1: Image directory
+  #   2: Original patient number
+  #   3: Start png image number
+  #   4: End png image number
+  #   5: Threshold parameter
+  #   6: Physical voxel dimensions in mm as a string (N.NxN.NxN.N)
+  echo "--$1.$2--"
+  PRE=$OUTDIR/dicom_small_
+
+  # Read the list of points exceeding the threshold ($5) from png images using
+  # the images $3 through $4 as the range (-r) of input.  The range
+  # parameter must be known in advance for the particular images, and the
+  # threshold must generally be determined by trial and error for each image.
+  ./pngs2pls -d example/dicom_small_$1 -r $3 $4 \
+    -o $PRE$2.pls -t $5
+
+  # Convert the point list (.pls) file to a point graph (.pg) containing the 
+  # largest connected component
+  ./pls2pg -o $PRE$2-lcc.pg $PRE$2.pls
+
+  # Skeletonize the point graph
+  ./skeletonize -o $PRE$2.gd $PRE$2-lcc.pg
+
+  # Create the visualization (.gd file) and analysis (tsv, bout files),
+  # outputting  vessel tree data (-v), branchpoint data (-b), and a final
+  # image suitable for graphdisplay.  The voxel dimensions ($6) specify
+  # the physical units in the output files.
+  ./vis -g $PRE$2.vis.gd -d $6 -v $PRE$2.tsv -b $PRE$2.bout $PRE$2.gd
+}
+
+# Image-set-specific Configuration
+function batch1 {
+  # from ennis_mri_disk_1
+  # Large image is 380x640x128 0.70x0.70x0.84
+  run 1 1 0 63 0.28 "1.4x1.4x1.68"
+  # Large image is 380x640x128 0.70x0.70x0.80
+  # This image has scapula issues.  
+  # The threshold listed is technically ok, but an ugly mess.
+  run 1 2 64 127 0.34 "1.4x1.4x1.6"
+  # Large image is 380x640x128 0.70x0.70x0.80
+  # This image has particularly bright front and back, so we clip it
+  run 1 3 133 186 0.68 "1.4x1.4x1.6"
+  # Large image is 380x640x128 0.70x0.70x0.80
+  run 1 4 192 255 0.65 "1.4x1.4x1.6"
+  # Large image is 384x640x120 0.70x0.70x0.80
+  run 1 5 256 315 0.76 "1.4x1.4x1.6"
+  # Large image is 384x640x120 0.70x0.70x0.80
+  # This image has some other structure showing up even at 0.8
+  run 1 6 316 375 0.88 "1.4x1.4x1.6"
+}
+
+function batch2 {
+  # The patient numbers from ennis_mri_disk_2 are out of order relative to the
+  # image file order.
+  # Large image is 400x640x144 0.70x0.70x0.80
+  run 2 7 224 295 0.40 "1.4x1.4x1.6"
+  # Large image is 384x512x104 0.80x0.80x0.90
+  run 2 8 296 347 0.63 "1.6x1.6x1.8"
+  # Large image is 400x640x128 0.70x0.70x0.80
+  run 2 9 348 411 0.65 "1.4x1.4x1.6"
+  # Large image is 384x512x104 0.84x0.84x0.90
+  run 2 10 0 51 0.78 "1.68x1.68x1.8"
+  # Large image is 400x640x112 0.70x0.70x0.80
+  run 2 11 52 107 0.70 "1.4x1.4x1.6"
+  # Large image is 400x640x120 0.70x0.70x0.80
+  run 2 12 108 167 0.31 "1.4x1.4x1.6"
+  # Large image is 400x640x112 0.70x0.70x0.80
+  run 2 13 168 223 0.67 "1.4x1.4x1.6"
+}
+
+function batch3 {
+  # ennis_mri_disk_3
+  # Large image is 384x512x112 0.80x0.80x0.90
+  run 3 14 0 55 0.70 "1.6x1.6x1.8"
+  # Large image is 400x640x144 0.70x0.70x0.80
+  run 3 15 56 127 0.64 "1.4x1.4x1.6"
+  # Large image is 400x640x112 0.70x0.70x0.80
+  run 3 16 128 183 0.34 "1.4x1.4x1.6"
+  # Large image is 384x512x112 0.80x0.80x0.90
+  run 3 17 184 239 0.50 "1.6x1.6x1.8"
+  # Large image is 384x512x112 0.80x0.80x0.90
+  run 3 18 240 295 0.51 "1.6x1.6x1.8"
+  # Large image is 400x640x120 0.70x0.70x0.80
+  # This has no viable threshold.
+  #run 3 19 296 355 0.5
+  # Large image is 384x512x104 0.80x0.80x0.90
+  # This has no viable threshold.
+  #run 3 20 356 407 0.5
+  
+	# 19 and 20 may be rescuable by taking the 2nd largesc onnected component, at
+	# a threshold just above 0.53 for 20 and a little lower for 19.
+}
+
+# Function to run the analysis in parallel on 3 CPUs
+function parallel {
+  batch1 &
+  pid1=$!
+  batch2 &
+  pid2=$!
+  batch3 &
+  pid3=$!
+
+  wait $pid1 ; wait $pid2 ; wait $pid3
+}
+
+# Function to run the analysis serially
+function serial {
+  batch1 ; batch2 ; batch3
+}
+
+# Execute the analysis
+parallel
+
+# The following shell script aggregates all output from each image into single
+# files (dicom_small.all.tsv and dicom_small.all.tlist) with only one header
+# line.
+if [ -f $OUTDIR/dicom_small.all.tsv ]
+then rm $OUTDIR/dicom_small.all.tsv
+fi
+head -1 $OUTDIR/dicom_small_1.tsv > $OUTDIR/data.tmp
+for FI in $OUTDIR/dicom_small_*.tsv
+do tail -n +2 $FI >> $OUTDIR/data.tmp
+done
+mv $OUTDIR/data.tmp $OUTDIR/dicom_small.all.tsv
