@@ -2,9 +2,8 @@
 
 Angicart analyses 3d radiographic images of blood vessels to determine the
 centerlines, topology, radius, length, and volume of blood vessel segments, as
-applied in Newberry MG, Ennis DB, Savage VM. Testing Foundations of Biological
-Scaling Theory Using Automated Measurements of Vascular Networks. PLoS
-Computational Biology. 2015.
+applied in 
+[Newberry MG, Ennis DB, Savage VM (2015) Testing Foundations of Biological Scaling Theory Using Automated Measurements of Vascular Networks. PLoS Comput Biol 11(8): e1004455. doi:10.1371/journal.pcbi.1004455](https://dx.doi.org/10.1371/journal.pcbi.1004455)
 
 ## Usage
 
@@ -44,9 +43,7 @@ it can be adapted to a variety of situations.  For details, see
 
 For citing angicart in academic work, please cite the paper that introduced it,
 
-> Newberry MG, Ennis DB, Savage VM. Testing Foundations of Biological
-> Scaling Theory Using Automated Measurements of Vascular Networks. PLoS
-> Computational Biology. 2015.
+> [Newberry MG, Ennis DB, Savage VM (2015) Testing Foundations of Biological Scaling Theory Using Automated Measurements of Vascular Networks. PLoS Comput Biol 11(8): e1004455. doi:10.1371/journal.pcbi.1004455](https://dx.doi.org/10.1371/journal.pcbi.1004455)
 
 ## Authors and community
 

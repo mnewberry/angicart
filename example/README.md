@@ -1,9 +1,7 @@
 # Angicart Example
 
 This directory shows an example of angicart usage by reproducing the analysis
-of the paper _Newberry MG, Ennis DB, Savage VM. Testing Foundations of
-Biological Scaling Theory Using Automated Measurements of Vascular Networks.
-PLoS Computational Biology. 2015._  
+of the paper [Newberry MG, Ennis DB, Savage VM (2015) Testing Foundations of Biological Scaling Theory Using Automated Measurements of Vascular Networks. PLoS Comput Biol 11(8): e1004455. doi:10.1371/journal.pcbi.1004455](https://dx.doi.org/10.1371/journal.pcbi.1004455)
 
 The real substance is the `process` script and the comments within it.  These
 illustrate how to process data using angicart.  This README serves as a guide
