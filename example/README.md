@@ -64,8 +64,11 @@ angicart $ example/process
 [...]
 ```
 
-This will create the main output data in `example/out/dicom_small.all.tsv`.
-The columns of the spreadsheet are
+This will create the main output data in `example/out/dicom_small.all.tsv`. The
+output can be compared with `example/example.dicom_small.all.tsv`, the original
+output from Newberry et al. 2015.  Note that the files may not be identical, as
+columns such as the color column are generated randomly.  The columns of the
+spreadsheet are
 - `tag`, an arbitrary string naming the input file
 - `name`, an arbitrary string naming the vessel segment.  angicart typically
   uses a textual description of the vessel endpoints, as this is guaranteed to
@@ -89,4 +92,3 @@ The columns of the spreadsheet are
   junction.
 - `s`, the conserved exponent of length, if any, of the downstream branching
   junction.
-
