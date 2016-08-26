@@ -1,4 +1,4 @@
-(** This file Copyright (c) 2011 Mitchell Johnson. *)
+(** This file Copyright (c) 2011-2016 Mitchell Newberry. *)
 (* *)
 (* This software is free software; you can redistribute it and/or *)
 (* modify it under the terms of the GNU Library General Public *)
@@ -25,6 +25,7 @@ let sq x = x * x
 let seq f g x = f (g x) 
 let ( |! ) x f = f x
 let rad l v = sqrt (v /. (l *. pi))
+let absf = abs_float
 
 let tips cc =
   let boundary_points =
@@ -252,6 +253,12 @@ type data = {
   defc : int ;
   ls : float Map.t ;
   color : int * int * int ;
+  stab : Point.t ;
+  dtab : Point.t ;
+  stab5 : Point.t option ;
+  dtab5 : Point.t option ;
+  stab20 : Point.t option ;
+  dtab20 : Point.t option ;
 }
 
 let data e edata = EMap.find e edata
@@ -276,14 +283,24 @@ let summarize dist skel cc =
       then 0. else dist a b
     in Gr.shortest_path_tree start weight cc in
   let rec traverse (src, node) rest =
-    let rec path (len, (src, dst)) =
+    let rec path (len, nsteps, nt5, nt20, (src, dst)) =
       let len = len +. dist src dst in
+      let nsteps = nsteps + 1 in
+      let nt5 = if nsteps == 5 then Some dst else nt5 in
+      let nt20 = if nsteps == 20 then Some dst else nt20 in
       match Gr.degree dst skel with
-        2 -> path (len, (dst, Set.choose (Gr.downstream (src, dst) skel)))
-      | _ -> (len, (src, dst))
+        2 -> path (len, nsteps, nt5, nt20, 
+          (dst, Set.choose (Gr.downstream (src, dst) skel)))
+      | _ -> (len, nsteps, nt5, nt20, (src, dst))
     in
     let kons ntab (gr, edata) =
-      let (len, (dtab, dnode)) = path (0., (node, ntab)) in
+      let (len, nsteps, snt5, snt20, (dtab, dnode)) = 
+        path (0., 0, None, None, (node, ntab)) in
+      let (len_, nsteps_, dnt5, dnt20, (ntab_, node_)) =
+        path (0., 0, None, None, (dnode, dtab)) in
+      (if absf (len -. len_) > 0.0000000001 || nsteps <> nsteps_ 
+         || node <> node_ || ntab <> ntab_
+       then failwith "Assertion failed: irreversible edge.") ;
       let edge = Gr.canonical_edge node dnode in
       let points = 
         if Gr.are_neighbors node dnode cc
@@ -300,7 +317,10 @@ let summarize dist skel cc =
         { len = len; vol = vol *. (float (tot - defc) /. float tot) ; 
           voxc = tot ; defc = defc ;
           ls = Map.with_keys (Set.elements points) ls ;
-          color = Mu.hsl2rgb (Random.float 360., 1., 0.5) }
+          color = Mu.hsl2rgb (Random.float 360., 1., 0.5) ;
+          stab   = ntab ;  dtab   = dtab ;
+          stab5  = snt5 ;  dtab5  = dnt5 ;
+          stab20 = snt20 ; dtab20 = dnt20 }
         edata in
       traverse (dtab, dnode) (gr, edata)
     in
@@ -409,9 +429,17 @@ let tree_dataset sg edata tag =
   let show_e e = let (src, dst) = canon e in
     Printf.sprintf "%s-%s" (Point.to_str src) (Point.to_str dst)
   in
+  (* List positions 1 and 5 edges down the vessel centerline *)
+  let show_tabs ed =
+    let print_pto = function Some pt -> Point.to_str pt | _ -> "NA" in
+    String.concat "\t"
+      ((Point.to_str ed.stab) :: (Point.to_str ed.dtab) ::
+        (map print_pto [ed.stab5; ed.dtab5; ed.stab20; ed.dtab20]))
+  in
   let show_col (r, g, b) = Printf.sprintf "#%02x%02x%02x" r g b in
   let show_edata e ed =
-    Printf.sprintf "%s\t%f\t%f\t%f\t%d\t%d\t%s" (show_e e) ed.len ed.vol 
+    Printf.sprintf "%s\t%s\t%f\t%f\t%f\t%d\t%d\t%s" (show_e e) (show_tabs ed)
+      ed.len ed.vol 
       (rad ed.len ed.vol) ed.voxc ed.defc (show_col ed.color)
   in
   let rec count_tips e = let cs = downst e in
@@ -435,7 +463,7 @@ let tree_dataset sg edata tag =
       (List.length children) a b (* (Mu.join "," (Mu.map (fun (a, b) -> show_e a) children)) *)
   in
   let rec describe_e p pd e ed =
-    Printf.sprintf "%s\t%s\t%d\t%s\t%f\t%f\t%s\n" tag (show_edata e ed) 
+    Printf.sprintf "%s\t%s\t%d\t%s\t%f\t%f\t%s\n" tag (show_edata e ed)
       (count_tips e) (show_e p) (rad_d ed /. rad_d pd) (ed.len /. pd.len) 
       (show_cdata e ed) (* (Mu.join "," (Mu.map (fun (a, b) -> show_e a) children)) *)
     ^ cat (map (fun (c, cd) -> describe_e e ed c cd) (children e ed))
@@ -446,7 +474,7 @@ let tree_dataset sg edata tag =
   let ed = data e edata in
   let des c = describe_e e ed c (data (canon c) edata) in
   let edir = if count_tips e < count_tips (dst,src) then (dst, src) else e in
-  "tag\tname\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\tq\ts\n"
+  "tag\tname\tstab\tdtab\tstab5\tdtab5\tstab20\tdtab20\tlen\tvol\trad\tvoxc\tdefc\tcol\ttips\tparent\tbeta\tgamma\tnchild\tq\ts\n"
   ^ Printf.sprintf "%s\t%s\t%d\tNA\tNA\tNA\t%s\n" tag (show_edata e ed)
       (count_tips edir) (show_cdata edir ed)
   ^ cat (map des (downst edir))
