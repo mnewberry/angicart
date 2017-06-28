@@ -68,6 +68,31 @@ let tips_alt cc =
     Set.for_all (fun n -> Map.find n ls < Map.find pt ls) (Gr.neighbors pt cc)
   in Set.filter is_local_max (Gr.with_degs cc [1;2;3;4;5;6;7;8;9;10;11;12;13])
 
+let local_maximum_distance_tips local_radius same_radius cc =
+  let (spt, ls) = Gr.shortest_path_tree (Gr.choose cc) Point.dist cc in
+  let is_local_max pt =
+    Set.for_all (fun n -> Map.find n ls <= Map.find pt ls) 
+      (Gr.neighborhood local_radius pt cc) in 
+  let tips = Set.filter is_local_max
+    (Gr.with_degs cc (Mu.range 1 16)) in
+  let rec same_tips point same =
+    let (a,b,c) = point in Printf.printf "(%d, %d, %d)\n%!" a b c ;
+    let same_mk nh len same =
+      if (len < Point.dist point nh *. (sqrt 2. +. 1. /. sqrt 5.) +. 1.0)
+        && Set.mem nh tips && not (Set.mem nh same)
+      then Set.union (same_tips nh (Set.add point same)) same else same in
+    Map.fold same_mk (Gr.find_within point Point.dist cc same_radius cc.Gr.ps) 
+      same in
+  let rec prune acc = function
+      [] -> acc
+    | hd :: tl -> 
+      let hd_same_tips = same_tips hd Set.empty in 
+      prune (Set.add hd acc)
+        (List.filter (fun p -> not (Set.mem p hd_same_tips)) tl) in
+  prune Set.empty
+    (List.sort (Mu.compare_with (fun p -> Map.find p ls))
+      (Set.elements tips)) (* Include tips in descending order *)
+
 (* Remove duplicate tips *)
 (* Two tips are the same if they are closeby, and their distance within the
 	 network is comparable to their euclidean distance (ie, they are not in
@@ -78,7 +103,7 @@ let tips_alt cc =
 let pruned_tips_alt w radius cc =
   let same_tips point =
     let same_mk nh len same =
-      if len < w point nh *. 1.1 +. 2. then Set.add nh same else same in
+      if len < w point nh *. 1.1 +. 1. then Set.add nh same else same in
     Map.fold same_mk (Gr.find_within point w cc radius cc.Gr.ps) Set.empty in
   let rec prune pruned unpruned =
     if unpruned = Set.empty then pruned else

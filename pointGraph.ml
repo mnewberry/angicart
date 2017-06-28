@@ -72,6 +72,11 @@ let choose pg = Set.med_elt pg.ps
 let size pg = Set.cardinal pg.ps
 let points pg = pg.ps
 
+let neighborhood radius point pg =
+  Set.add point 
+    (Mu.rec_n (radius - 1) 
+      (fun set -> neighbors_set set pg) (neighbors point pg))
+
 (** [create_sg set gr] creates a subgraph of [gr] using the points in [set] and
 all edges from [gr] that might connect them.  Throws an exception of [set] is
 not a subset of [points gr]. *)

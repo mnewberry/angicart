@@ -48,7 +48,7 @@ Mu.dump_obj (Mu.default "out.pointlist" !outp) vertices ;;
 match !gdout with 
     None -> ()
   | Some gdoutfn -> 
-      Mu.dump_obj "out.gd"
+      Mu.dump_obj gdoutfn
         ([], [], vertices, 
          (Mu.map (fun (x, y, z) -> 
                    let col = truncate (mri_img.{x,y,z} *. 255.) in 
